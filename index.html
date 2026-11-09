@@ -49,16 +49,35 @@ body{font-family:'Segoe UI',system-ui,sans-serif;height:100vh;display:flex;flex-
 #props::-webkit-scrollbar{width:3px;}
 #props::-webkit-scrollbar-thumb{background:#333;border-radius:2px;}
 #props h3{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:12px;}
-.prop{margin-bottom:11px;}
-.prop>label{font-size:11px;color:#999;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;}
-.prop input[type=text],.prop input[type=number],.prop select,.prop textarea{width:100%;padding:7px 9px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:5px;color:#e0e0e0;font-size:13px;outline:none;font-family:inherit;}
-.prop input:focus,.prop select:focus,.prop textarea:focus{border-color:var(--accent);}
-.prop textarea{resize:vertical;min-height:64px;}
-.prop input[type=checkbox]{accent-color:var(--accent);width:auto;transform:scale(1.15);}
-.prop input[type=color]{width:42px;height:30px;padding:2px;border:1px solid var(--border);border-radius:5px;background:none;cursor:pointer;}
-.pr{display:flex;gap:6px;}.pr .prop{flex:1;}
-.pc{display:flex;align-items:center;gap:6px;}
-.pdiv{border:none;border-top:1px solid var(--border);margin:12px 0;}
+/* Panel de propiedades: etiqueta e input en la misma fila */
+.prop{display:grid;grid-template-columns:88px 1fr;align-items:center;gap:8px;margin-bottom:6px;min-height:28px;}
+.prop>label{font-size:12px;color:#9aa0b4;margin:0;}
+.prop:has(textarea),.prop:has(.icon-grid),.prop:has(.dir-grid){grid-template-columns:1fr;gap:4px;}
+.prop:has(>label:only-child)>label{display:flex;align-items:center;gap:8px;cursor:pointer;color:#c8ccd8;}
+.prop:has(>label:only-child){grid-template-columns:1fr;}
+.prop input[type=text],.prop input[type=number],.prop select,.prop textarea,.xywh input{width:100%;padding:5px 8px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:5px;color:#e0e0e0;font-size:12px;outline:none;font-family:inherit;}
+.prop input:focus,.prop select:focus,.prop textarea:focus,.xywh input:focus{border-color:var(--accent);background:rgba(124,106,247,.08);}
+.prop select option{background:var(--panel);}
+.prop textarea{resize:vertical;min-height:58px;line-height:1.45;}
+.prop input[type=checkbox]{accent-color:var(--accent);width:auto;margin:0;}
+.prop input[type=color]{width:30px;height:26px;padding:1px;border:1px solid var(--border);border-radius:5px;background:none;cursor:pointer;flex-shrink:0;}
+.pr{display:flex;gap:6px;}.pr .prop{flex:1;grid-template-columns:1fr;gap:3px;}
+.pc{display:flex;align-items:center;gap:6px;font-size:11px;color:#8890a6;}
+.pc label{display:flex;align-items:center;gap:4px;cursor:pointer;}
+.pdiv{border:none;border-top:1px solid var(--border);margin:10px 0;}
+.phead{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;}
+.ptype{font-size:15px;font-weight:600;color:#fff;}
+.pid{font-size:11px;color:var(--muted);}
+.ptools{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:4px;}
+.ptools button{padding:6px 0;border:1px solid var(--border);border-radius:6px;background:rgba(255,255,255,.04);color:#ccc;cursor:pointer;font-size:14px;font-family:inherit;transition:background .12s;}
+.ptools button:hover{background:rgba(124,106,247,.22);color:#fff;}
+.ptools button.del:hover{background:rgba(200,40,40,.3);color:#fbb;}
+.psec{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--accent);margin:14px 0 8px;padding-top:10px;border-top:1px solid var(--border);}
+.xywh{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.xywh label{position:relative;display:block;}
+.xywh label span{position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--muted);pointer-events:none;}
+.xywh input{padding-left:24px!important;}
+.empty kbd{display:inline-block;padding:0 5px;border:1px solid var(--border);border-radius:3px;font-size:11px;color:#9aa0b4;font-family:inherit;}
 .pbtn{width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:13px;margin-top:4px;font-family:inherit;transition:background .12s;}
 .pbtn.sec{background:rgba(255,255,255,0.05);color:#bbb;}
 .pbtn.sec:hover{background:rgba(255,255,255,0.12);}
@@ -381,11 +400,16 @@ function updVis(){$cv.querySelectorAll('.comp').forEach(el=>{el.classList.toggle
 // ── props.js ───────────────────────────────────────────────────────────
 function renderProps(){
   if(S.multiSel.size>1){renderMultiProps();return;}
-  if(!S.sel){$pb.innerHTML='<p class="empty">Selecciona un elemento<br>para editar sus propiedades</p>';return;}
+  if(!S.sel){$pb.innerHTML='<p class="empty">Selecciona un elemento<br>para editar sus propiedades.<br><br><span style="font-size:12px">Arrastra o haz <b>doble clic</b> en la paleta para agregar<br><b>Doble clic</b> en un elemento: editar texto<br><kbd>Shift</kbd>+clic: selección múltiple<br><kbd>Flechas</kbd> mover · <kbd>Ctrl</kbd>+<kbd>D</kbd> duplicar</span></p>';return;}
   const c=cc().find(x=>x.id===S.sel);if(!c)return;
-  let h=`<div style="font-size:10px;color:var(--muted);margin-bottom:10px;">${TN[c.type]||c.type} · id ${c.id}</div>`;
-  h+=`<div class="pr"><div class="prop"><label>X</label><input type="number" id="pp-x" value="${Math.round(c.x)}" oninput="p('x',+this.value,1)"></div><div class="prop"><label>Y</label><input type="number" id="pp-y" value="${Math.round(c.y)}" oninput="p('y',+this.value,1)"></div></div>`;
-  h+=`<div class="pr"><div class="prop"><label>Ancho</label><input type="number" id="pp-w" value="${Math.round(c.width)}" oninput="p('width',+this.value,1)"></div><div class="prop"><label>Alto</label><input type="number" id="pp-h" value="${Math.round(c.height)}" oninput="p('height',+this.value,1)"></div></div>`;
+  let h=`<div class="phead"><span class="ptype">${TN[c.type]||c.type}</span><span class="pid">#${c.id}</span></div>`;
+  h+=`<div class="ptools"><button onclick="copyComp()" title="Copiar (Ctrl+C)">⎘</button><button onclick="dupComp()" title="Duplicar (Ctrl+D)">⧉</button><button onclick="front()" title="Traer al frente">⇡</button><button class="del" onclick="delComp()" title="Eliminar (Supr)">🗑</button></div>`;
+  h+=`<div class="psec">Posición y tamaño</div><div class="xywh">`
+    +`<label title="Posición X"><span>X</span><input type="number" id="pp-x" value="${Math.round(c.x)}" oninput="p('x',+this.value,1)"></label>`
+    +`<label title="Posición Y"><span>Y</span><input type="number" id="pp-y" value="${Math.round(c.y)}" oninput="p('y',+this.value,1)"></label>`
+    +`<label title="Ancho"><span>W</span><input type="number" id="pp-w" value="${Math.round(c.width)}" oninput="p('width',+this.value,1)"></label>`
+    +`<label title="Alto"><span>H</span><input type="number" id="pp-h" value="${Math.round(c.height)}" oninput="p('height',+this.value,1)"></label></div>`;
+  h+=`<div class="psec">Contenido</div>`;
   if(['lbl','h1','btn','chk','badge','box','card','alert','nav'].includes(c.type))h+=`<div class="prop"><label>Texto / Etiqueta</label><input type="text" value="${esc(c.label)}" oninput="p('label',this.value)"></div>`;
   if(c.type==='card')h+=`<div class="prop"><label>Contenido</label><textarea oninput="p('body',this.value)">${esc(c.body)}</textarea></div>`;
   if(['inp','num','ta','date'].includes(c.type))h+=`<div class="prop"><label>Placeholder</label><input type="text" value="${esc(c.ph)}" oninput="p('ph',this.value)"></div>`;
@@ -422,11 +446,9 @@ function renderProps(){
   if(c.type==='icon'){h+=`<div class="prop"><label>Ícono</label><div class="icon-grid">${ICONS.map(ic=>`<div class="icon-opt ${c.icon===ic?'on':''}" onclick="p('icon','${ic}')" title="${ic}">${ic}</div>`).join('')}</div></div>`;h+=`<div class="prop"><label>Tamaño</label><input type="number" min="12" max="96" value="${c.fs||24}" oninput="p('fs',+this.value)"></div>`;h+=`<div class="prop"><label>Color</label><div class="pc"><input type="color" value="${c.tc||'#555555'}" oninput="p('tc',this.value)"></div></div>`;const bgV2=c.bg==='transparent'?'#ffffff':(c.bg||'#ffffff');h+=`<div class="prop"><label>Fondo</label><div class="pc"><input type="color" id="pp-bg" value="${bgV2}" oninput="p('bg',this.value)"><label><input type="checkbox" ${c.bg==='transparent'?'checked':''} onchange="p('bg',this.checked?'transparent':document.getElementById('pp-bg').value)"> Transp.</label></div></div>`;}
   if(c.type==='imgph'){h+=`<div class="prop"><label>Color fondo</label><div class="pc"><input type="color" value="${c.bg||'#f0f0f0'}" oninput="p('bg',this.value)"></div></div>`;h+=`<div class="prop"><label>Color borde</label><div class="pc"><input type="color" value="${c.bc||'#cccccc'}" oninput="p('bc',this.value)"></div></div>`;h+=`<div class="prop"><label>Color líneas X</label><div class="pc"><input type="color" value="${c.lc||'#cccccc'}" oninput="p('lc',this.value)"></div></div>`;}
   if(c.type==='arr'){h+=`<div class="prop"><label>Etiqueta</label><input type="text" value="${esc(c.label)}" oninput="p('label',this.value)"></div>`;h+=`<div class="prop"><label>Dirección</label><div class="dir-grid">${[['nw','↖'],['up','↑'],['ne','↗'],['left','←'],['','·'],['right','→'],['sw','↙'],['down','↓'],['se','↘']].map(([d,s])=>d?`<button class="dir-btn ${(c.dir||'right')===d?'on':''}" onclick="p('dir','${d}')">${s}</button>`:`<div class="dir-dot">·</div>`).join('')}</div></div>`;h+=`<div class="prop"><label>Color</label><div class="pc"><input type="color" value="${c.ac||'#e94560'}" oninput="p('ac',this.value)"></div></div>`;h+=`<div class="prop"><label>Grosor</label><input type="number" min="1" max="10" value="${c.lw||2}" oninput="p('lw',+this.value)"></div>`;h+=`<div class="prop"><label><input type="checkbox" ${c.dashed?'checked':''} onchange="p('dashed',this.checked)"> Discontinua</label></div>`;h+=`<div class="prop"><label><input type="checkbox" ${c.bidir?'checked':''} onchange="p('bidir',this.checked)"> Bidireccional</label></div>`;}
+  h+=`<div class="psec">Apariencia</div>`;
   if(!['sep','arr','imgph','alert','icon'].includes(c.type)){const bgV=c.bg==='transparent'?'#ffffff':(c.bg||'#ffffff');h+=`<div class="prop"><label>Color fondo</label><div class="pc"><input type="color" id="pp-bg" value="${bgV}" oninput="p('bg',this.value)"><label><input type="checkbox" ${c.bg==='transparent'?'checked':''} onchange="p('bg',this.checked?'transparent':document.getElementById('pp-bg').value)"> Transp.</label></div></div>`;h+=`<div class="prop"><label>Color texto</label><div class="pc"><input type="color" value="${c.tc||'#333333'}" oninput="p('tc',this.value)"></div></div>`;}
-  h+=`<hr class="pdiv">`;
-  h+=`<div class="prop"><label>Capa</label><input type="number" min="1" value="${c.z||1}" oninput="p('z',+this.value,1)"></div>`;
-  h+=`<div class="prop"><label><input type="checkbox" ${c.locked?'checked':''} onchange="p('locked',this.checked)"> 📌 Anclar capa (no sube al frente)</label></div>`;
-  h+=`<hr class="pdiv"><button class="pbtn sec" onclick="copyComp()">⎘ Copiar (Ctrl+C)</button><button class="pbtn sec" onclick="dupComp()">⧉ Duplicar</button><button class="pbtn sec" onclick="front()">↑ Al frente</button><button class="pbtn del" onclick="delComp()">✕ Eliminar</button>`;
+  h+=`<div class="prop"><label>Capa</label><div class="pc"><input type="number" min="1" value="${c.z||1}" oninput="p('z',+this.value,1)" style="width:64px"><label title="Al hacer clic no se trae al frente"><input type="checkbox" ${c.locked?'checked':''} onchange="p('locked',this.checked)"> 📌 Anclar</label></div></div>`;
   $pb.innerHTML=h;
 }
 function renderMultiProps(){
