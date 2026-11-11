@@ -569,7 +569,25 @@ function dupComp(){const c=cc().find(x=>x.id===S.sel);if(!c)return;const copy=cl
 function dupMulti(){const copies=[];getSelComps().forEach(c=>{const cp=clone(c);cp.id=S.nid++;cp.x+=20;cp.y+=20;cp.z=topZ()+1;cc().push(cp);copies.push(cp);$cv.appendChild(mkEl(cp));});S.multiSel=new Set(copies.map(c=>c.id));S.sel=copies.at(-1)?.id||null;updVis();renderProps();updateCurThumb();status();snapshot();}
 function front(){const c=cc().find(x=>x.id===S.sel);if(!c)return;c.z=topZ()+1;const el=$cv.querySelector(`[data-id="${c.id}"]`);if(el)el.style.zIndex=c.z;renderProps();snapshot();}
 function moveLayer(dir){const list=cc();const c=list.find(x=>x.id===S.sel);if(!c)return;const z=c.z||1;const cand=list.filter(x=>x.id!==c.id&&(dir>0?(x.z||1)>z:(x.z||1)<z));if(!cand.length)return;const nb=cand.reduce((a,b)=>dir>0?((a.z||1)<=(b.z||1)?a:b):((a.z||1)>=(b.z||1)?a:b));const nz=nb.z||1;nb.z=z;c.z=nz;patch(c);patch(nb);renderProps();status();}
-function copyComp(){if(S.multiSel.size>1){S.clip=getSelComps().map(c=>clone(c));}else{const c=cc().find(x=>x.id===S.sel);if(!c)return;S.clip=clone(c);}}
+// Portapapeles del sistema: permite copiar/pegar entre pestañas, entre la versión
+// local y la de GitHub Pages, o entre distintos archivos de mockup.
+const CLIP_TAG='mockup-clip:v1:';let lastClipText=null;
+function copyComp(){if(S.multiSel.size>1){S.clip=getSelComps().map(c=>clone(c));}else{const c=cc().find(x=>x.id===S.sel);if(!c)return;S.clip=clone(c);}
+  lastClipText=CLIP_TAG+JSON.stringify(S.clip);
+  try{navigator.clipboard?.writeText(lastClipText).catch(()=>{});}catch(e){}}
+function editingText(){const a=document.activeElement;return !!a&&(['INPUT','TEXTAREA','SELECT'].includes(a.tagName)||a.isContentEditable);}
+document.addEventListener('copy',e=>{
+  if(editingText()||!(S.sel||S.multiSel.size>1))return;
+  copyComp();if(!S.clip||!e.clipboardData)return;
+  e.clipboardData.setData('text/plain',lastClipText);e.preventDefault();
+});
+document.addEventListener('paste',e=>{
+  if(editingText())return;
+  const t=e.clipboardData?.getData('text/plain')||'';
+  // Si el texto es el mismo que copiamos aquí, se conserva S.clip (mantiene el desplazamiento de +20 en pegados sucesivos)
+  if(t.startsWith(CLIP_TAG)&&t!==lastClipText){try{S.clip=JSON.parse(t.slice(CLIP_TAG.length));lastClipText=t;}catch(err){}}
+  e.preventDefault();pasteComp();
+});
 function pasteComp(){
   if(!S.clip)return;
   const clips=Array.isArray(S.clip)?S.clip:[S.clip];
@@ -588,7 +606,8 @@ document.addEventListener('keydown',e=>{
   if(ctrl&&k==='o'){e.preventDefault();importHTML();return;}
   const tag=document.activeElement.tagName;if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;
   if(ctrl&&k==='z'&&!e.shiftKey){e.preventDefault();undo();return;}if(ctrl&&(k==='y'||k==='z')){e.preventDefault();redo();return;}
-  if(ctrl&&k==='c'){if(S.sel||S.multiSel.size>1)copyComp();return;}if(ctrl&&k==='v'){e.preventDefault();pasteComp();return;}
+  // Ctrl+C / Ctrl+V los manejan los eventos 'copy' y 'paste' (portapapeles del sistema)
+  if(ctrl&&(k==='c'||k==='v'))return;
   if(ctrl&&k==='d'){e.preventDefault();if(S.multiSel.size>1)dupMulti();else if(S.sel)dupComp();return;}
   if(ctrl&&k==='a'){e.preventDefault();S.multiSel=new Set(cc().map(c=>c.id));S.sel=cc().length?cc().at(-1).id:null;updVis();renderProps();status();return;}
   if(e.key==='Delete'||e.key==='Backspace'){if(S.multiSel.size>1)delMulti();else if(S.sel)delComp();return;}
